@@ -3,20 +3,36 @@
 #Input a list of valid domain names and outputs a list of mangled domains to stdout.
 #Used as a helper tool for subdomain enumeration of lower-level environments.
 import sys
+import argparse
 
-if len(sys.argv) != 2:
-	print("Requires one argument.\n\n./domaingler.py /path/to/subdomain/list")
-	sys.exit()
+#To Do: argument validation... argparse
 
-#To Do: argument handling and argument validation... argparse?  Maybe later.
+
 #To Do: keep track of different levels of mangling.  Mangle at all levels, not just the top level.
 #		Recursive function maybe?  Let's whiteboard it.
-urlfile = sys.argv[1]
 
-file = open(urlfile,"r")
+parser = argparse.ArgumentParser()
+parser.add_argument("-i","--infile", help="path to the list of domains")
+parser.add_argument("-o", "--outfile", help="path for the output file")
+args = parser.parse_args()
 
-mang = [	"test",
+infileloc = args.infile
+outfileloc = args.outfile
+if infileloc == None :
+	print("Requires infile argument.\n\n./domaingler.py /path/to/subdomain/list")
+	sys.exit()
+
+if outfileloc != None:
+	outfile = open(outfileloc,"w") 
+
+infile = open(infileloc,"r")
+
+
+mang = [	"temp",
+			"tmp",
+			"test",
 			"testing",
+			"tst",
 			"prod"
 			"production",
 			"replica",
@@ -31,17 +47,26 @@ mang = [	"test",
 			"stg",
 			"stage",
 			"staging",
-			"tst",
 			"uat",
 			"st",
 			"sit",
 			"cit",
 			"cce",
 			"cert",
-			"live"]
+			"live",
+			"devtemp",
+			"prodtemp",
+			"uattemp"]
+
+#Maybe make adding the numbers an optional flag.
 nums = ["","0","1","2","3","4"]
 delimiters = ["","-"]
 
+def sendout(url):
+	if outfileloc == None:
+		print(url)
+	else:
+		outfile.write(url + "\n")
 
 def mangle(url):
 	subdomain = url.split(".",1)[0]
@@ -50,13 +75,13 @@ def mangle(url):
 	for environ in mang:
 		for numbers in nums:
 			plaindom = environ + numbers + "." + subdomain + "." + bottomlevel
-			print(plaindom)
+			sendout(plaindom)
 			for delim in delimiters:
 				mangdom1 = environ +  numbers + delim + subdomain + "." + bottomlevel
 				mangdom2 = environ + numbers + delim + subdomain + "." + bottomlevel
-				print(mangdom1)
-				print(mangdom2)
+				sendout(mangdom1)
+				sendout(mangdom2)
 
-for url in file: 
+for url in infile: 
 	mangle(url.strip())
 	
