@@ -6,13 +6,19 @@ This project recieves input as a list of discovered domains and outputs a newlin
 
 Feel free to contribute!
 
+## Future Features
+
+* multi-threading for the dns resolver
+* multi-level mangling (mangle valid found subdomains)
+* sqlite3 integration for long-term campaigns
+
 ## Authors
 
-* **Cary Hooper** - [@nopantsrootdanc](https://github.com/caryhooper)
+* **Cary Hooper** - [@nopantrootdance](https://github.com/caryhooper)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License.
 
 ## Acknowledgments
 
