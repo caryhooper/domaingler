@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-#By: Cary Hooper @nopantsrootdanc
+#By: Cary Hooper @nopantrootdance
 #Input a list of valid domain names and outputs a list of mangled domains to stdout.
 #Used as a helper tool for subdomain enumeration of lower-level environments exposed to the internet. 
 import sys
@@ -33,12 +33,13 @@ parser.add_argument("-o", "--outfile", help="path to the output file")
 parser.add_argument("-n", "--numbers", help="appends numbers to the lower-level environments.\n(ex. dev2.example.com)", action='store_true')
 parser.add_argument("-r", "--resolve", help="resolve the domain list and output valid domains", action='store_true')
 parser.add_argument("-t", "--threads", help="number of threads", default=16)
+parser.add_argument("-p", "--portscan", help="scan discovered hosts for open web ports", action='store_true')
 args = parser.parse_args()
 banner()
 infileloc = args.infile
 outfileloc = args.outfile
 
-#Checks if infile exists.  If not, exception is thrown.
+#Checks if infile exists. If not, exception is thrown.
 try:
 	infile = open(infileloc,"r")
 except:
@@ -48,8 +49,8 @@ except:
 #Change these based on OSINT and size of target
 nums = ["","0","1","2","3","4"]
 delimiters = ["","-"]
-domains = []
-
+#Top 31 web ports
+ports = [80,81,88,443,4443,8000,8001,8008,8080,8081,8088,8100,8101,8108,8110,8111,8118,8180,8181,8188,8800,8801,8808,8818,8881,8888,8443,8843,9000,9443]
 #List of lower-level environments.
 mang = ["temp",
 		"tmp",
@@ -82,8 +83,6 @@ mang = ["temp",
 		"prodtemp",
 		"uattemp"]
 
-
-
 #Input domain object and output a string
 def stringify(domainobj):
 	string = ""
@@ -103,7 +102,7 @@ def sendout(domainset):
 		outfile.close()
 
 #Input a set of domain objects
-#Output a set of new domain objects
+#Output a set of mangled domain objects
 def mangle(domainset):
 	outlist = set()
 	for domainobj in domainset:
@@ -135,23 +134,28 @@ def mangle(domainset):
 					outlist.add(mang2obj)
 	return outlist
 
+#Input a set of domain objects
+#Output a set of resolvable domain objects
 def do_resolve(domainset):
 	def query(domainobj):
 		resolver = dns.resolver.Resolver()
-		resolver.timeout = 1
-		resolver.lifeime = 1
+		resolver.timeout = 2
+		resolver.lifeime = 2
 		resolver.nameservers = ['8.8.8.8','8.8.4.4','80.80.80.80','80.80.81.81']
 		for reqtype in ['A','AAAA']:
 			try:
 				ans = resolver.query(domainobj,reqtype)
 				for data in ans:
-					print('[*] Found! ' + str(ans.canonical_name)[:-1] + ' has address: ' + str(data.address))
+					print('[*] Found! ' + str(ans.canonical_name)[:-1] + ' has address ' + str(data.address))
 					validsubs.add(domainobj)
 			except dns.resolver.NXDOMAIN as e:
 			 	#print("No domain found for " + stringify(domainobj))
 			 	pass
 			except dns.resolver.NoAnswer as e:
 				#print("Resolver issue.")
+				pass
+			except dns.resolver.Timeout as e:
+				#print("Timeout.")
 				pass
 			except dns.name.LabelTooLong as e:
 				print("DNS label is too long (> 63 octets) for domain " + stringify(domainobj))
@@ -168,6 +172,29 @@ def do_resolve(domainset):
 
 	return validsubs
 
+#Input a set of domain objects
+#Output a list of open TCP sockets
+def do_scan(domainset):
+	livesites = []
+	def pscan(target):
+		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		s.settimeout(2.0)
+		target = stringify(target)[:-1]
+		for port in ports:
+			try:
+		    	#ip = socket.gethostbyname(target)
+				con = s.connect((target,port))
+				livesite = str(target) + ":" + str(port)
+				print("[*] Port open! " + livesite )
+				livesites.append(livesite)
+				return True
+			except:
+				pass
+	#Multithreading
+	pool = ThreadPool(int(args.threads))
+	pool.map(pscan,domainset)
+	return livesites
+
 ##MAIN##
 alldomains = set()
 #Populate domain set
@@ -179,11 +206,19 @@ for domain in infile:
 mangdomains = mangle(alldomains)
 
 if args.resolve == True:
+	print("[!] Resolving mangled domains...")
 	try:
 		validsubs = do_resolve(mangdomains)
 	except KeyboardInterrupt as e:
 		print("\nProgram terminated by user.")
 		sys.exit()
-	print("Program Complete.")
+	if args.portscan == True:
+		print("[!] Scanning live domains for open web ports...")
+		live = do_scan(mangdomains)
+		print("\nLive Sites:")
+		for i in live:
+			print(i)
 
 sendout(validsubs)
+
+
