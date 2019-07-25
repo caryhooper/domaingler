@@ -47,11 +47,10 @@ except:
 	sys.exit()
 
 #Change these based on OSINT and size of target
-nums = ["","0","1","2","3","4"]
 delimiters = ["","-"]
 #Top 31 web ports
-ports = [80,81,88,443,4443,8000,8001,8008,8080,8081,8088,8100,8101,8108,8110,8111,8118,8180,8181,8188,8800,8801,8808,8818,8881,8888,8443,8843,9000,9443]
-#List of lower-level environments.
+ports = [80,81,88,2079,2082,2083,2086,2087,443,4443,4567,7547,8000,8001,8008,8080,8081,8088,8100,8101,8108,8110,8111,8118,8180,8181,8188,8800,8801,8808,8818,8881,8888,8443,8843,9000,9443]
+#List of lower-level environments.  Add based on OSINT / initial recon
 mang = ["temp",
 		"tmp",
 		"test",
@@ -87,7 +86,7 @@ mang = ["temp",
 def stringify(domainobj):
 	string = ""
 	for part in domainobj:
-		string += part + "."
+		string = string + str(part) + "."
 	return string[:-1]
 
 #Input a set and output either an outfile or names to stdout
@@ -105,6 +104,7 @@ def sendout(domainset):
 #Output a set of mangled domain objects
 def mangle(domainset):
 	outlist = set()
+	nums = ["","0","1","2","3","4"]
 	for domainobj in domainset:
 		outlist.add(domainobj)
 
@@ -120,16 +120,16 @@ def mangle(domainset):
 		for environ in mang:
 			for numbers in nums:
 				#dev2.example.com
-				sub = environ + numbers + "." + bottom + "." + topdom
+				sub = str(environ) + str(numbers) + "." + str(bottom) + "." + str(topdom)
 				subobj = dns.name.from_text(sub.strip())
 				outlist.add(subobj)
 				for delim in delimiters:
 					#dev2-example.com
-					mang1 = environ +  numbers + delim + bottom + "." + topdom
+					mang1 = str(environ) +  str(numbers) + str(delim) + str(bottom) + "." + str(topdom)
 					mang1obj = dns.name.from_text(mang1.strip())
 					outlist.add(mang1obj)
 					#example-dev2.com
-					mang2 = bottom + delim + environ + numbers + "." + topdom
+					mang2 = str(bottom) + str(delim) + str(environ) + str(numbers) + "." + str(topdom)
 					mang2obj = dns.name.from_text(mang2.strip())
 					outlist.add(mang2obj)
 	return outlist
