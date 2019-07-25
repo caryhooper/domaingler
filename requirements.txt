@@ -1,2 +1,0 @@
-cherrypy>=17.4.2
-pysqlite>=2.7.0
